@@ -1,133 +1,118 @@
 # Pricing Service
 
-A Spring Boot REST API that returns the applicable price for a product based on application date, product ID, and brand ID. Built with Hexagonal Architecture.
+REST service built with Spring Boot that queries the applicable price for a product of a commercial chain on a given date, applying priority rules when multiple rates are in effect.
 
-## Table of Contents
+## Problem Description
 
-- [Features](#features)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [API Documentation](#api-documentation)
-- [Testing](#testing)
-- [Project Structure](#project-structure)
-- [Business Rules](#business-rules)
+In the e-commerce database, there is a `prices` table that stores the final price (PVP) and the applicable rate for a product of a chain within a date range.
 
-## Features
+When two rates overlap in a date range, the one with the **highest priority** (higher numeric value) is applied.
 
-- RESTful API endpoint to query product prices
-- Support for overlapping price periods with priority-based selection
-- In-memory H2 database with sample data
-- Comprehensive unit and integration tests
-- Clean hexagonal architecture
+### prices Table Structure
 
-## Architecture
+| Field | Description |
+|-------|-------------|
+| `brand_id` | Foreign key of the group's chain |
+| `start_date` | Price application start date |
+| `end_date` | Price application end date |
+| `price_list` | Applicable price rate identifier |
+| `product_id` | Product identifier |
+| `priority` | Price application disambiguator |
+| `price` | Final sale price |
+| `currency` | Currency ISO code |
 
-This project follows **Hexagonal Architecture** (Ports and Adapters) with clear separation of concerns:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Infrastructure                       │
-│  ┌──────────────────┐              ┌─────────────────┐  │
-│  │   REST Controller│              │  JPA Repository │  │
-│  │     (Input)      │              │    (Output)     │  │
-│  └────────┬─────────┘              └────────┬────────┘  │
-│           │                                 │           │
-└───────────┼─────────────────────────────────┼───────────┘
-            │                                 │
-      ┌─────▼─────────────────────────────────▼─────┐
-      │            Application Layer                │
-      │         (Use Case Orchestration)            │
-      └─────────────────┬───────────────────────────┘
-                        │
-            ┌───────────▼───────────┐
-            │     Domain Layer      │
-            │  (Business Logic)     │
-            │  - Models             │
-            │  - Ports (Interfaces) │
-            │  - Services           │
-            └───────────────────────┘
-```
-
-### Layers
-
-- **Domain**: Pure business logic, framework-agnostic
-  - Models: `Price`, `PriceQuery`
-  - Ports: Input and output interfaces
-  - Services: Price selection algorithm
-
-- **Application**: Use case orchestration
-  - Implements input ports
-  - Coordinates domain services and repositories
-
-- **Infrastructure**: Framework-specific implementations
-  - REST API (Spring MVC)
-  - Database persistence (JPA/H2)
-  - Mappers (MapStruct)
-
-## Tech Stack
+## Technologies
 
 - **Java 17**
 - **Spring Boot 3.3.6**
-- **H2 Database** (in-memory)
-- **Lombok** (boilerplate reduction)
-- **MapStruct** (object mapping)
-- **JUnit 5** (testing)
-- **Mockito** (mocking)
-- **Maven** (build tool)
+- **H2 Database** (in-memory database)
+- **Spring Data JPA**
+- **Lombok**
+- **MapStruct**
+- **JUnit 5 + Mockito**
+- **Maven**
 
-## Getting Started
+## Architecture
+
+The project implements **Hexagonal Architecture** (Ports & Adapters):
+
+```
+src/main/java/com/example/pricing_service/
+├── application/
+│   ├── service/
+│   │   └── FindApplicablePriceService.java    # Use case implementation
+│   └── usecase/
+│       └── FindApplicablePriceUseCase.java    # Input port
+├── domain/
+│   ├── model/
+│   │   ├── Price.java                         # Domain entity
+│   │   └── PriceQuery.java                    # Query object
+│   └── port/out/
+│       └── PriceRepository.java               # Output port
+└── infrastructure/
+    └── adapter/
+        ├── in/rest/
+        │   ├── PriceController.java           # REST controller
+        │   ├── dto/
+        │   │   ├── PriceRequest.java
+        │   │   └── PriceResponse.java
+        │   └── mapper/
+        │       └── PriceDtoMapper.java
+        └── out/persistence/
+            ├── PriceJpaAdapter.java           # Persistence adapter
+            ├── entity/
+            │   └── PriceEntity.java
+            ├── mapper/
+            │   └── PriceEntityMapper.java
+            └── repository/
+                └── PriceJpaRepository.java
+```
+
+## Installation and Execution
 
 ### Prerequisites
 
-- Java 17 or higher
+- Java 17+
 - Maven 3.6+
 
-### Installation
+### Build the Project
 
-1. Clone the repository:
 ```bash
-  git clone <repository-url>
-cd pricing-service
+mvn clean install
 ```
 
-2. Build the project:
+### Run the Application
+
 ```bash
-  mvn clean install
+mvn spring-boot:run
 ```
 
-3. Run the application:
+The application will be available at `http://localhost:8080`
+
+### Run Tests
+
 ```bash
-  mvn spring-boot:run
+mvn test
 ```
 
-The application will start on `http://localhost:8080`
+## REST API
 
-### H2 Console
+### Endpoint: Query Applicable Price
 
-Access the H2 database console at: `http://localhost:8080/h2-console`
+```
+GET /prices
+```
 
-- **JDBC URL**: `jdbc:h2:mem:pricesdb`
-- **Username**: `sa`
-- **Password**: _(empty)_
-
-## API Documentation
-
-### Get Applicable Price
-
-Returns the applicable price for a product at a specific date and time.
-
-**Endpoint**: `GET /prices`
-
-**Query Parameters**:
+**Input parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `applicationDate` | ISO-8601 DateTime | Yes | Date and time to check price (e.g., `2020-06-14T10:00:00`) |
+| `applicationDate` | ISO DateTime | Yes | Application date (e.g., `2020-06-14T10:00:00`) |
 | `productId` | Long | Yes | Product identifier |
-| `brandId` | Long | Yes | Brand identifier |
+| `brandId` | Long | Yes | Chain identifier |
 
-**Success Response (200 OK)**:
+**Successful response (200 OK):**
+
 ```json
 {
   "productId": 35455,
@@ -140,135 +125,82 @@ Returns the applicable price for a product at a specific date and time.
 }
 ```
 
-**Error Responses**:
-- `400 Bad Request`: Missing or invalid parameters
-- `404 Not Found`: No applicable price found
+**Response codes:**
 
-### Examples
+| Code | Description |
+|------|-------------|
+| 200 | Price found |
+| 400 | Invalid or missing parameters |
+| 404 | No applicable price found |
+
+### Usage Examples
 
 ```bash
-# Request at 10:00 on June 14th
+# Test 1: Request at 10:00 on the 14th
 curl "http://localhost:8080/prices?applicationDate=2020-06-14T10:00:00&productId=35455&brandId=1"
 
-# Request at 16:00 on June 14th
+# Test 2: Request at 16:00 on the 14th
 curl "http://localhost:8080/prices?applicationDate=2020-06-14T16:00:00&productId=35455&brandId=1"
 
-# Request at 21:00 on June 14th
+# Test 3: Request at 21:00 on the 14th
 curl "http://localhost:8080/prices?applicationDate=2020-06-14T21:00:00&productId=35455&brandId=1"
 
-# Request at 10:00 on June 15th
+# Test 4: Request at 10:00 on the 15th
 curl "http://localhost:8080/prices?applicationDate=2020-06-15T10:00:00&productId=35455&brandId=1"
 
-# Request at 21:00 on June 16th
+# Test 5: Request at 21:00 on the 16th
 curl "http://localhost:8080/prices?applicationDate=2020-06-16T21:00:00&productId=35455&brandId=1"
 ```
 
-## Testing
+## Test Data
 
-The project includes comprehensive test coverage:
+The H2 database is initialized with the following data:
 
-### Run All Tests
-```bash
-  mvn test
-```
+| brand_id | start_date | end_date | price_list | product_id | priority | price | currency |
+|----------|------------|----------|------------|------------|----------|-------|----------|
+| 1 | 2020-06-14 00:00:00 | 2020-12-31 23:59:59 | 1 | 35455 | 0 | 35.50 | EUR |
+| 1 | 2020-06-14 15:00:00 | 2020-06-14 18:30:00 | 2 | 35455 | 1 | 25.45 | EUR |
+| 1 | 2020-06-15 00:00:00 | 2020-06-15 11:00:00 | 3 | 35455 | 1 | 30.50 | EUR |
+| 1 | 2020-06-15 16:00:00 | 2020-12-31 23:59:59 | 4 | 35455 | 1 | 38.95 | EUR |
 
-### Test Categories
+## Tests
 
-1. **Unit Tests** (Domain Layer)
-   - `PriceSelectionServiceTest`: Tests the price selection algorithm
-   - Business logic validation with various scenarios
-
-2. **Unit Tests** (Application Layer)
-   - `FindApplicablePriceServiceTest`: Tests use case orchestration
-   - Mock-based testing
-
-3. **Integration Tests**
-   - `PriceControllerIntegrationTest`: End-to-end API tests
-   - Tests all 5 required scenarios with real HTTP requests
-
-### Test Coverage
-
-- ✅ Price selection by highest priority
-- ✅ Price selection by latest start date (when priorities are equal)
-- ✅ Date range validation (inclusive)
-- ✅ Empty result handling
-- ✅ HTTP 200, 400, and 404 responses
-
-## Project Structure
+The project includes **11 tests** (unit and integration):
 
 ```
-src/
-├── main/
-│   ├── java/com/example/pricingservice/
-│   │   ├── application/
-│   │   │   └── service/
-│   │   │       └── FindApplicablePriceService.java
-│   │   ├── domain/
-│   │   │   ├── model/
-│   │   │   │   ├── Price.java
-│   │   │   │   └── PriceQuery.java
-│   │   │   ├── port/
-│   │   │   │   ├── in/
-│   │   │   │   │   └── FindApplicablePriceUseCase.java
-│   │   │   │   └── out/
-│   │   │   │       └── PriceRepository.java
-│   │   │   └── service/
-│   │   │       └── PriceSelectionService.java
-│   │   └── infrastructure/
-│   │       ├── adapter/
-│   │       │   ├── in/
-│   │       │   │   └── rest/
-│   │       │   │       ├── PriceController.java
-│   │       │   │       ├── dto/
-│   │       │   │       │   ├── PriceRequest.java
-│   │       │   │       │   └── PriceResponse.java
-│   │       │   │       └── mapper/
-│   │       │   │           └── PriceDtoMapper.java
-│   │       │   └── out/
-│   │       │       └── persistence/
-│   │       │           ├── PriceJpaAdapter.java
-│   │       │           ├── entity/
-│   │       │           │   └── PriceEntity.java
-│   │       │           ├── mapper/
-│   │       │           │   └── PriceEntityMapper.java
-│   │       │           └── repository/
-│   │       │               └── PriceJpaRepository.java
-│   │       └── config/
-│   │           └── BeanConfiguration.java
-│   └── resources/
-│       ├── application.yml
-│       └── data.sql
-└── test/
-    └── java/com/example/pricingservice/
-        ├── application/service/
-        │   └── FindApplicablePriceServiceTest.java
-        ├── domain/service/
-        │   └── PriceSelectionServiceTest.java
-        └── infrastructure/adapter/in/rest/
-            └── PriceControllerIntegrationTest.java
+Tests run: 11, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
 ```
+
+### Integration Tests (PriceControllerIntegrationTest)
+
+Validate the 5 required scenarios:
+
+| Test | Date/Time | Expected Result |
+|------|-----------|-----------------|
+| Test 1 | 06/14 10:00 | price_list=1, price=35.50€ |
+| Test 2 | 06/14 16:00 | price_list=2, price=25.45€ |
+| Test 3 | 06/14 21:00 | price_list=1, price=35.50€ |
+| Test 4 | 06/15 10:00 | price_list=3, price=30.50€ |
+| Test 5 | 06/16 21:00 | price_list=4, price=38.95€ |
+
+### Unit Tests (FindApplicablePriceServiceTest)
+
+- Price return when exists
+- Empty return when no prices found
+- Correct priority-based selection when multiple prices apply
+
+## H2 Console
+
+Access to the in-memory database:
+
+- **URL:** `http://localhost:8080/h2-console`
+- **JDBC URL:** `jdbc:h2:mem:pricesdb`
+- **Username:** `sa`
+- **Password:** *(empty)*
 
 ## Business Rules
 
-### Price Selection Algorithm
-
-When multiple prices apply for the same date, the selection follows these rules:
-
-1. **Priority**: Select the price with the highest priority value
-2. **Start Date**: If priorities are equal, select the price with the latest start date
-3. **Date Range**: The application date must be within `[startDate, endDate]` (inclusive)
-
-### Sample Data
-
-The application is initialized with the following test data:
-
-| Brand | Start Date | End Date | Price List | Product | Priority | Price | Currency |
-|-------|------------|----------|------------|---------|----------|-------|----------|
-| 1 | 2020-06-14 00:00 | 2020-12-31 23:59 | 1 | 35455 | 0 | 35.50 | EUR |
-| 1 | 2020-06-14 15:00 | 2020-06-14 18:30 | 2 | 35455 | 1 | 25.45 | EUR |
-| 1 | 2020-06-15 00:00 | 2020-06-15 11:00 | 3 | 35455 | 1 | 30.50 | EUR |
-| 1 | 2020-06-15 16:00 | 2020-12-31 23:59 | 4 | 35455 | 1 | 38.95 | EUR |
-
-## License
-
-This project is for educational/assessment purposes.
+1. Search for all prices matching `productId`, `brandId` and whose date range includes the `applicationDate`
+2. If multiple prices apply, select the one with the **highest priority**
+3. In case of priority tie, select the one with the **most recent start date**
