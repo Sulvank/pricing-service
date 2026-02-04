@@ -3,10 +3,10 @@ package com.example.pricing_service.application.service;
 import com.example.pricing_service.domain.model.Price;
 import com.example.pricing_service.domain.model.PriceQuery;
 import com.example.pricing_service.domain.port.out.PriceRepository;
-import com.example.pricing_service.domain.service.PriceSelectionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -26,14 +26,8 @@ class FindApplicablePriceServiceTest {
     @Mock
     private PriceRepository priceRepository;
 
-    private PriceSelectionService priceSelectionService;
+    @InjectMocks
     private FindApplicablePriceService service;
-
-    @BeforeEach
-    void setUp() {
-        priceSelectionService = new PriceSelectionService();
-        service = new FindApplicablePriceService(priceRepository, priceSelectionService);
-    }
 
     @Test
     void shouldReturnApplicablePriceWhenFound() {
@@ -56,7 +50,7 @@ class FindApplicablePriceServiceTest {
                 .currency("EUR")
                 .build();
 
-        List<Price> prices = Collections.singletonList(price1);
+        Optional<List<Price>> prices = Optional.of(Collections.singletonList(price1));
         when(priceRepository.findByQuery(query)).thenReturn(prices);
 
         // When
@@ -78,7 +72,7 @@ class FindApplicablePriceServiceTest {
                 .brandId(1L)
                 .build();
 
-        when(priceRepository.findByQuery(query)).thenReturn(Collections.emptyList());
+        when(priceRepository.findByQuery(query)).thenReturn(Optional.of(Collections.emptyList()));
 
         // When
         Optional<Price> result = service.findApplicablePrice(query);
@@ -114,7 +108,7 @@ class FindApplicablePriceServiceTest {
                 .build();
 
         List<Price> prices = Arrays.asList(lowPriority, highPriority);
-        when(priceRepository.findByQuery(query)).thenReturn(prices);
+        when(priceRepository.findByQuery(query)).thenReturn(Optional.of(prices));
 
         // When
         Optional<Price> result = service.findApplicablePrice(query);

@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "PRICES")
+@Table(name = "prices")
 @Getter
 @Builder
 @NoArgsConstructor
@@ -21,27 +21,27 @@ public class PriceEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "BRAND_ID", nullable = false)
+    @Column(name = "brand_id", nullable = false)
     private Long brandId;
 
-    @Column(name = "START_DATE", nullable = false)
+    @Column(name = "start_date", nullable = false)
     private LocalDateTime startDate;
 
-    @Column(name = "END_DATE", nullable = false)
+    @Column(name = "end_date", nullable = false)
     private LocalDateTime endDate;
 
-    @Column(name = "PRICE_LIST", nullable = false)
+    @Column(name = "price_list", nullable = false)
     private Long priceList;
 
-    @Column(name = "PRODUCT_ID", nullable = false)
+    @Column(name = "product_id", nullable = false)
     private Long productId;
 
-    @Column(name = "PRIORITY", nullable = false)
+    @Column(name = "priority", nullable = false)
     private Integer priority;
 
-    @Column(name = "PRICE", nullable = false, precision = 10, scale = 2)
+    @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "CURR", nullable = false, length = 3)
+    @Column(name = "curr", nullable = false, length = 3)
     private String currency;
 }

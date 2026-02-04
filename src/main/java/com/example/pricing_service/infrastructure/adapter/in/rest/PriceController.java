@@ -1,7 +1,7 @@
 package com.example.pricing_service.infrastructure.adapter.in.rest;
 
 import com.example.pricing_service.domain.model.PriceQuery;
-import com.example.pricing_service.domain.port.in.FindApplicablePriceUseCase;
+import com.example.pricing_service.application.usecase.FindApplicablePriceUseCase;
 import com.example.pricing_service.infrastructure.adapter.in.rest.dto.PriceResponse;
 import com.example.pricing_service.infrastructure.adapter.in.rest.mapper.PriceDtoMapper;
 import jakarta.validation.constraints.NotNull;

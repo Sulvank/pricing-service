@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -19,12 +20,12 @@ public class PriceJpaAdapter implements PriceRepository {
     private final PriceEntityMapper mapper;
 
     @Override
-    public List<Price> findByQuery(PriceQuery query) {
+    public Optional<List<Price>> findByQuery(PriceQuery query) {
         List<PriceEntity> entities = jpaRepository.findApplicablePrices(
-                query.getProductId(),
-                query.getBrandId(),
-                query.getApplicationDate()
+                query.productId(),
+                query.brandId(),
+                query.applicationDate()
         );
-        return mapper.toDomainList(entities);
+        return Optional.ofNullable(mapper.toDomainList(entities));
     }
 }

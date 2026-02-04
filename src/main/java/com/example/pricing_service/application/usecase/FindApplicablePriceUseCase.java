@@ -1,4 +1,4 @@
-package com.example.pricing_service.domain.port.in;
+package com.example.pricing_service.application.usecase;
 
 import com.example.pricing_service.domain.model.Price;
 import com.example.pricing_service.domain.model.PriceQuery;

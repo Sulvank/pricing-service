@@ -4,7 +4,8 @@ import com.example.pricing_service.domain.model.Price;
 import com.example.pricing_service.domain.model.PriceQuery;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PriceRepository {
-    List<Price> findByQuery(PriceQuery query);
+    Optional<List<Price>> findByQuery(PriceQuery query);
 }
