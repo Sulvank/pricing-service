@@ -6,5 +6,5 @@ import com.example.pricing_service.domain.model.PriceQuery;
 import java.util.Optional;
 
 public interface FindApplicablePriceUseCase {
-    Optional<Price> findApplicablePrice(PriceQuery query);
+    Price findApplicablePrice(PriceQuery query);
 }

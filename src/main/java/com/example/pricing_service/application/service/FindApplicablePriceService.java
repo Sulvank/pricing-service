@@ -1,5 +1,6 @@
 package com.example.pricing_service.application.service;
 
+import com.example.pricing_service.domain.exception.PriceNotFoundException;
 import com.example.pricing_service.domain.model.Price;
 import com.example.pricing_service.domain.model.PriceQuery;
 import com.example.pricing_service.application.usecase.FindApplicablePriceUseCase;
@@ -18,12 +19,12 @@ public class FindApplicablePriceService implements FindApplicablePriceUseCase {
     private final PriceRepository priceRepository;
 
     @Override
-    public Optional<Price> findApplicablePrice(PriceQuery query) {
-        List<Price> prices = priceRepository.findByQuery(query).orElse(List.of());
-        return prices.stream()
-                .filter(price -> price.isApplicableFor(query.applicationDate()))
+    public Price findApplicablePrice(PriceQuery query) {
+        return priceRepository.findByQuery(query)
+                .stream()
                 .max(Comparator
                         .comparing(Price::getPriority)
-                        .thenComparing(Price::getStartDate));
+                        .thenComparing(Price::getStartDate))
+                .orElseThrow(() -> PriceNotFoundException.forQuery(query.productId(), query.brandId()));
     }
 }

@@ -1,5 +1,7 @@
 package com.example.pricing_service.infrastructure.adapter.in.rest;
 
+import com.example.pricing_service.domain.exception.PriceNotFoundException;
+import com.example.pricing_service.domain.model.Price;
 import com.example.pricing_service.domain.model.PriceQuery;
 import com.example.pricing_service.application.usecase.FindApplicablePriceUseCase;
 import com.example.pricing_service.infrastructure.adapter.in.rest.dto.PriceResponse;
@@ -43,9 +45,7 @@ public class PriceController {
                 .brandId(brandId)
                 .build();
 
-        return findApplicablePriceUseCase.findApplicablePrice(query)
-                .map(mapper::toResponse)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Price price = findApplicablePriceUseCase.findApplicablePrice(query);
+        return ResponseEntity.ok(mapper.toResponse(price));
     }
 }

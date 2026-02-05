@@ -20,12 +20,12 @@ public class PriceJpaAdapter implements PriceRepository {
     private final PriceEntityMapper mapper;
 
     @Override
-    public Optional<List<Price>> findByQuery(PriceQuery query) {
+    public List<Price> findByQuery(PriceQuery query) {
         List<PriceEntity> entities = jpaRepository.findApplicablePrices(
                 query.productId(),
                 query.brandId(),
                 query.applicationDate()
         );
-        return Optional.ofNullable(mapper.toDomainList(entities));
+        return mapper.toDomainList(entities);
     }
 }
