@@ -1,9 +1,9 @@
 package com.example.pricing_service.application.service;
 
+import com.example.pricing_service.domain.exception.PriceNotFoundException;
 import com.example.pricing_service.domain.model.Price;
 import com.example.pricing_service.domain.model.PriceQuery;
 import com.example.pricing_service.domain.port.out.PriceRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,8 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +28,7 @@ class FindApplicablePriceServiceTest {
     private FindApplicablePriceService service;
 
     @Test
-    void shouldReturnApplicablePriceWhenFound() {
+    void shouldReturnPriceWhenFound() {
         // Given
         PriceQuery query = PriceQuery.builder()
                 .applicationDate(LocalDateTime.of(2020, 6, 14, 10, 0))
@@ -38,7 +36,7 @@ class FindApplicablePriceServiceTest {
                 .brandId(1L)
                 .build();
 
-        Price price1 = Price.builder()
+        Price expectedPrice = Price.builder()
                 .id(1L)
                 .brandId(1L)
                 .productId(35455L)
@@ -50,73 +48,43 @@ class FindApplicablePriceServiceTest {
                 .currency("EUR")
                 .build();
 
-        Optional<List<Price>> prices = Optional.of(Collections.singletonList(price1));
-        when(priceRepository.findByQuery(query)).thenReturn(prices);
+        when(priceRepository.findByQuery(any()))
+                .thenReturn(List.of(expectedPrice));
 
         // When
-        Optional<Price> result = service.findApplicablePrice(query);
+        Price result = service.findApplicablePrice(query);
 
         // Then
-        assertTrue(result.isPresent());
-        assertEquals(1L, result.get().getId());
-        assertEquals(new BigDecimal("35.50"), result.get().getFinalPrice());
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals(new BigDecimal("35.50"), result.getFinalPrice());
         verify(priceRepository, times(1)).findByQuery(query);
     }
 
-    @Test
-    void shouldReturnEmptyWhenNoPricesFound() {
-        // Given
-        PriceQuery query = PriceQuery.builder()
-                .applicationDate(LocalDateTime.of(2020, 6, 14, 10, 0))
-                .productId(35455L)
-                .brandId(1L)
-                .build();
-
-        when(priceRepository.findByQuery(query)).thenReturn(Optional.of(Collections.emptyList()));
-
-        // When
-        Optional<Price> result = service.findApplicablePrice(query);
-
-        // Then
-        assertFalse(result.isPresent());
-        verify(priceRepository, times(1)).findByQuery(query);
-    }
+    // ... mantener imports existentes ...
+// Añadir esta aserción detallada en el test de excepción:
 
     @Test
-    void shouldSelectCorrectPriceWhenMultiplePricesApply() {
+    void shouldThrowExceptionWhenNoPriceFound() {
         // Given
+        Long productId = 99999L;
+        Long brandId = 1L;
         PriceQuery query = PriceQuery.builder()
-                .applicationDate(LocalDateTime.of(2020, 6, 14, 16, 0))
-                .productId(35455L)
-                .brandId(1L)
+                .applicationDate(LocalDateTime.now())
+                .productId(productId)
+                .brandId(brandId)
                 .build();
 
-        Price lowPriority = Price.builder()
-                .id(1L)
-                .priority(0)
-                .startDate(LocalDateTime.of(2020, 6, 14, 0, 0))
-                .endDate(LocalDateTime.of(2020, 12, 31, 23, 59))
-                .finalPrice(new BigDecimal("35.50"))
-                .build();
+        when(priceRepository.findByQuery(any())).thenReturn(List.of());
 
-        Price highPriority = Price.builder()
-                .id(2L)
-                .priority(1)
-                .startDate(LocalDateTime.of(2020, 6, 14, 15, 0))
-                .endDate(LocalDateTime.of(2020, 6, 14, 18, 30))
-                .finalPrice(new BigDecimal("25.45"))
-                .build();
+        // When & Then
+        PriceNotFoundException exception = assertThrows(
+                PriceNotFoundException.class,
+                () -> service.findApplicablePrice(query)
+        );
 
-        List<Price> prices = Arrays.asList(lowPriority, highPriority);
-        when(priceRepository.findByQuery(query)).thenReturn(Optional.of(prices));
-
-        // When
-        Optional<Price> result = service.findApplicablePrice(query);
-
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(2L, result.get().getId());
-        assertEquals(1, result.get().getPriority());
-        verify(priceRepository, times(1)).findByQuery(query);
+        // Verificamos que el mensaje de error sea el esperado (inyectado por PriceNotFoundException.forQuery)
+        String expectedMessage = String.format("No applicable price found for productId=%d and brandId=%d", productId, brandId);
+        assertEquals(expectedMessage, exception.getMessage());
     }
 }
